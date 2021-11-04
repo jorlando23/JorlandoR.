@@ -1,0 +1,137 @@
+SELECT USER;
+SELECT * FROM pg_user
+
+CREATE OR REPLACE FUNCTION consultar_usuario()
+RETURNS SETOF BOOLEAN AS $$
+DECLARE 
+	usuario VARCHAR(100);
+BEGIN
+	
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+VALIDAR CLIENTE
+
+CREATE OR REPLACE FUNCTION validar_cliente()
+RETURNS TRIGGER AS $$
+BEGIN
+	IF (NEW.nome IS NULL) THEN
+		RAISE EXCEPTION 'Deve informar o nome';
+	END IF;
+	IF (NEW.cpf IS NULL) THEN
+		RAISE EXCEPTION 'Deve informar o CPF';
+	END IF;
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER validar_cliente
+	BEFORE -- Tempo (antes)
+	INSERT OR UPDATE -- Evento
+	ON cliente -- Tabela
+	FOR EACH ROW EXECUTE PROCEDURE validar_cliente();
+
+INSERT INTO cliente(nome, telefone, cpf)
+VALUES ('Jorlando Rodrigues dos Santos','67998256517', '98765432100')
+
+SELECT * FROM cliente
+
+
+
+ACOES INSERT, UPDATE, DELETE NA TABELA (CONTROLE DE AUDITORIA)
+
+CREATE OR REPLACE FUNCTION aluguel_auditoria()
+RETURNS TRIGGER AS $$
+BEGIN
+	--Utiliza a variavel TG_OP para descobrir operação
+	IF(TG_OP = 'INSERT') THEN
+		INSERT INTO aluguel_auditoria
+		VALUES (TG_OP, USER, NOW(), NEW.cliente);
+		RETURN NEW;
+	ELSIF(TG_OP = 'UPDATE') THEN
+		INSERT INTO aluguel_auditoria
+		VALUES (TG_OP, USER, NOW(), NEW.cliente);
+		RETURN NEW;
+	ELSIF(TG_OP = 'DELETE') THEN
+		INSERT INTO aluguel_auditoria
+		VALUES (TG_OP, USER, NOW(), OLD.cliente);
+		RETURN OLD;
+	END IF;
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE TRIGGER aluguel_auditoria
+	AFTER
+	INSERT OR UPDATE OR DELETE
+	ON aluguel -- Tabela
+	FOR EACH ROW EXECUTE PROCEDURE aluguel_auditoria();
+	
+	
+INSERT INTO aluguel (cliente, tema, local_evento, data_festa, hora_inicio,
+					hora_termino, valor_servico, desconto)
+VALUES (8, 2, 1, '2021-12-25', '18:00:00', '22:00:00', 680.0, 0.0);
+
+UPDATE aluguel SET cliente = 8, tema = 2, local_evento = 2, 
+data_festa = '2021-12-25', hora_inicio = '18:00:00', hora_termino = '23:00:00',
+valor_servico = 680.0, desconto = 0.0
+WHERE id = 20;
+
+DELETE FROM aluguel WHERE id = 20;
+
+SELECT * FROM aluguel_auditoria
+
+
+
+
+
+######################################################
+
+
+
+
+
+CREATE OR REPLACE FUNCTION aluguel_auditoria2()
+RETURNS TRIGGER AS $$
+BEGIN
+	UPDATE aluguel_auditoria 
+	SET soma = (NEW.cliente + NEW.tema)
+	WHERE cliente = NEW.cliente;
+	
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE TRIGGER aluguel_auditoria_soma
+	AFTER -- Tempo
+	INSERT OR UPDATE OR DELETE
+	ON aluguel -- Tabela
+	FOR EACH ROW EXECUTE PROCEDURE aluguel_auditoria2();
+	
+	
+INSERT INTO aluguel (cliente, tema, 
+					 local_evento, data_festa, 
+					 hora_inicio, hora_termino, 
+					 valor_servico, desconto)
+VALUES (3, 2, 1, '2021-12-25', '18:00:00', '22:00:00', 680.0, 0.0);
+
+SELECT * FROM aluguel_auditoria
+
+UPDATE aluguel SET cliente = 8, 
+                   tema = 2, 
+				   local_evento = 2, 
+				   data_festa = '2021-12-25', 
+				   hora_inicio = '18:00:00', 
+				   hora_termino = '23:00:00',
+                   valor_servico = 680.0, 
+				   desconto = 0.0
+WHERE id = 20;
+
+DELETE FROM aluguel WHERE id = 20;
+
