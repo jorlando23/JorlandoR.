@@ -1,0 +1,70 @@
+CREATE OR REPLACE FUNCTION vender_produto(data DATE, cliente INTEGER)
+RETURNS SETOF BOOLEAN AS $$
+DECLARE 
+	
+BEGIN
+	INSERT INTO venda(data, cliente) VALUES ($1, $2);
+	RETURN NEXT TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT vender_produto(2021-11-25, 1);
+SELECT * FROM venda
+
+#
+
+CREATE FUNCTION inserir_produto(nome VARCHAR(120), preco DOUBLE PRECISION, quantidade INTEGER)
+RETURNS BOOLEAN AS $$
+DECLARE
+	
+BEGIN
+	INSERT INTO produto (nome, preco, quantidade) VALUES ($1, $2, $3);
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT inserir_produto('Lajota', 0.90, 500);
+SELECT * FROM produto 
+
+#
+
+CREATE OR REPLACE FUNCTION atualizar_produto()
+RETURNS TRIGGER AS $$
+BEGIN
+UPDATE produto SET
+quantidade = quantidade - NEW.quantidade WHERE codproduto = NEW.produto;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+#
+
+CREATE OR REPLACE FUNCTION aluguel_auditoria()
+RETURNS TRIGGER AS $$
+BEGIN
+	--Utiliza a variavel TG_OP para descobrir operação
+	IF(TG_OP = 'INSERT') THEN
+		INSERT INTO aluguel_auditoria
+		VALUES (TG_OP, USER, NOW(), NEW.cliente);
+		RETURN NEW;
+	ELSIF(TG_OP = 'UPDATE') THEN
+		INSERT INTO aluguel_auditoria
+		VALUES (TG_OP, USER, NOW(), NEW.cliente);
+		RETURN NEW;
+	ELSIF(TG_OP = 'DELETE') THEN
+		INSERT INTO aluguel_auditoria
+		VALUES (TG_OP, USER, NOW(), OLD.cliente);
+		RETURN OLD;
+	END IF;
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+--CREATE TRIGGER att_produto
+--BEFORE INSERT OR UPDATE 
+--INSERT OR UPDATE 
+	--ON i_venda 
+--FOR EACH ROW EXECUTE PROCEDURE atualizar_produto();
+-
