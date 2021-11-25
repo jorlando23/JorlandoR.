@@ -1,4 +1,19 @@
-CREATE OR REPLACE FUNCTION vender_produto(data DATE, cliente INTEGER)
+CREATE OR REPLACE FUNCTION cadastrar_cliente(codcliente INTEGER, nome VARCHAR(150),
+rg VARCHAR(25), telefone VARCHAR(25), endereco VARCHAR(150), cidade INTEGER)
+RETURNS SETOF BOOLEAN AS $$
+DECLARE 
+	
+BEGIN
+	INSERT INTO cliente(codcliente, nome, rg, telefone) VALUES ($1, $2, $3, $4);
+	RETURN NEXT TRUE;
+END;
+$$ LANGUAGE plpgsql;
+SELECT cadastrar_cliente(1, 'Jorlando','1234567','67998256517')
+SELECT * FROM cliente
+
+#
+
+CREATE FUNCTION vender_produto(data DATE, cliente INTEGER)
 RETURNS SETOF BOOLEAN AS $$
 DECLARE 
 	
@@ -8,7 +23,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT vender_produto(2021-11-25, 1);
+
+SELECT vender_produto('2021-11-25', 1);
 SELECT * FROM venda
 
 #
@@ -67,4 +83,3 @@ $$ LANGUAGE plpgsql;
 --INSERT OR UPDATE 
 	--ON i_venda 
 --FOR EACH ROW EXECUTE PROCEDURE atualizar_produto();
--
